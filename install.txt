@@ -1,0 +1,137 @@
+总结：全新安装centos6.9，选择minimal安装
+
+1. 关闭selinux：
+	setenforce 0 立即生效， 修改/etc/selinux/config 文件将SELINUX=enforcing改为SELINUX=disabled重启生效
+2. 安装epel源：
+	yum install -y epel-release
+3. 安装ocserv：
+	yum install -y ocserv
+	此时ocserv.conf配置文件已经在/etc/ocserv文件夹中,“ocserv”用户和组已创建。
+4. 创建证书文件夹：
+	cd && mkdir cert && cd cert
+5. 创建ca证书模板文件 ca.tmpl：
+	cn = "VPN CA" 
+	organization = "Big Corp" 
+	serial = 1 
+	expiration_days = 3650
+	ca 
+	signing_key 
+	cert_signing_key 
+	crl_signing_key 
+6. 生成ca密钥和ca证书：
+	certtool --generate-privkey --outfile ca-key.pem
+	certtool --generate-self-signed --load-privkey ca-key.pem --template ca.tmpl --outfile ca-cert.pem
+7. 创建服务器证书模板文件 server.tmpl, 注意cn 字段ip或域名必须与服务器一致: 
+	cn = "192.168.0.66"
+	organization = "IBM" 
+	expiration_days = 3650 
+	signing_key 
+	encryption_key
+	tls_www_server
+8. 生成服务器密钥和证书：
+	certtool --generate-privkey --outfile server-key.pem
+	certtool --generate-certificate --load-privkey server-key.pem --load-ca-certificate ca-cert.pem --load-ca-privkey ca-key.pem --template server.tmpl --outfile server-cert.pem
+9. 将密钥、证书复制到ocserv配置文件夹/etc/ocserv中：
+	cp *.pem /etc/ocserv
+10.修改配置文件ocserv.conf：
+	auth = "plain[/etc/ocserv/ocpasswd]"
+	#其它auth字段注释掉
+	try-mtu-discovery = true
+
+	server-cert = /etc/ocserv/server-cert.pem
+	server-key = /etc/ocserv/server-key.pem
+
+	ipv4-network = 192.168.10.0/24
+
+	dns = 114.114.114.114
+
+	# 注释掉所有的route字段
+	#route = 10.10.10.0/255.255.255.0
+	#route = 192.168.0.0/255.255.0.0
+	#route = fef4:db8:1000:1001::/64
+	#no-route = 192.168.5.0/255.255.255.0
+
+	cisco-client-compat = true
+
+11.创建vpn用户：
+	ocpasswd -c /etc/ocserv/ocpasswd username
+12.开启nat：
+	iptables -t nat -A POSTROUTING -j MASQUERADE
+13.开启ip转发：
+	修改文件 /etc/sysctl.conf
+	net.ipv4.ip_forward=1
+	生效：
+	sysctl -p /etc/sysctl.conf
+14.创建防火墙规则：
+	iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport 443 -j ACCEPT
+	iptables -I INPUT -m state --state NEW -m udp -p udp --dport 443 -j ACCEPT
+	iptables -I FORWARD -i vpns+ -j ACCEPT
+	iptables -I FORWARD -o vpns+ -j ACCEPT #必须双向转发
+	service iptables save
+15.设置开机启动：
+	chkconfig --add ocserv
+	chkconfig ocserv on
+	service ocserv start
+16.大功告成，试试看。
+----------------------------------------------------------------------
+配置ocserv自签证书认证
+1. 执行上文1-9步
+2. 创建客户端证书模板：
+	cn = "user" 
+	unit = "admins" 
+	expiration_days = 365 
+	signing_key 
+	tls_www_client 
+3. 生成客户端证书：
+	certtool --generate-privkey --outfile user-key.pem
+	certtool --generate-certificate --load-privkey user-key.pem --load-ca-certificate ca-cert.pem --load-ca-privkey ca-key.pem --template user.tmpl --outfile user-cert.pem
+	certtool --to-p12 --load-privkey user-key.pem --pkcs-cipher 3des-pkcs12 --load-certificate user-cert.pem --outfile user.p12 --outder --password ""
+4. 修改配置文件ocserv.conf
+	auth = "certificate"
+	#其它auth字段注释掉
+	try-mtu-discovery = true
+	注释掉 listen-clear-file = /var/run/ocserv-conn.socket
+	server-cert = /etc/ocserv/server-cert.pem
+	server-key = /etc/ocserv/server-key.pem
+	ca-cert = /etc/ocserv/ca-cert.pem
+	cert-user-oid = 2.5.4.3
+	ipv4-network = 192.168.10.0/24
+	dns = 114.114.114.114
+	# 注释掉所有的route字段
+	#route = 10.10.10.0/255.255.255.0
+	#route = 192.168.0.0/255.255.0.0
+	#route = fef4:db8:1000:1001::/64
+	#no-route = 192.168.5.0/255.255.255.0
+	cisco-client-compat = true
+5. 启动ocserv：
+	service ocserv restart
+	或ocserv -f -d 1 可以查看调试信息
+5. 安装nginx：
+	yum install -y nginx
+6. 复制nginx配置文件
+	cp /etc/nginx/nginx.conf.default /etc/nginx/nginx.conf
+	修改server...location字段root行：/var/lib/nginx;
+	控制台输入命令service nginx restart生效
+7. 复制user.p12到nginx根目录
+	cd
+	cd cert
+	cp user.p12 /var/lib/nginx
+12.开启nat：
+	iptables -t nat -A POSTROUTING -j MASQUERADE
+13.开启ip转发：
+	修改文件 /etc/sysctl.conf
+	net.ipv4.ip_forward=1
+	生效：
+	sysctl -p /etc/sysctl.conf
+14.创建防火墙规则：
+	iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
+	iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport 443 -j ACCEPT
+	iptables -I INPUT -m state --state NEW -m udp -p udp --dport 443 -j ACCEPT
+	iptables -I FORWARD -i vpns+ -j ACCEPT
+	iptables -I FORWARD -o vpns+ -j ACCEPT #必须双向转发
+	service iptables save
+15.设置开机启动：
+	chkconfig --add ocserv
+	chkconfig ocserv on
+	service ocserv start
+16.大功告成，试试看。
