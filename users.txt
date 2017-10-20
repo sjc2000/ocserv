@@ -1,0 +1,8 @@
+#ocpasswd -c /etc/ocpasswd username
+moubin mb1234
+jsj5131 aa68510801
+xiao xwb123
+puji pj1234
+zhang zh123
+zeng zh1234
+tiancheng 123456
