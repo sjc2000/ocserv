@@ -1,4 +1,4 @@
-总结：全新安装centos6.9，选择minimal安装
+全新安装centos6.9，选择minimal安装
 
 1. 关闭selinux：
 	setenforce 0 立即生效， 修改/etc/selinux/config 文件将SELINUX=enforcing改为SELINUX=disabled重启生效
@@ -22,7 +22,7 @@
 	certtool --generate-privkey --outfile ca-key.pem
 	certtool --generate-self-signed --load-privkey ca-key.pem --template ca.tmpl --outfile ca-cert.pem
 7. 创建服务器证书模板文件 server.tmpl, 注意cn 字段ip或域名必须与服务器一致: 
-	cn = "192.168.0.66"
+	cn = "动态域名"
 	organization = "IBM" 
 	expiration_days = 3650 
 	signing_key 
@@ -72,7 +72,11 @@
 	chkconfig --add ocserv
 	chkconfig ocserv on
 	service ocserv start
-16.大功告成，试试看。
+16.设置动态域名自动更新，在/etc/rc.local末尾添加：
+        wget -O /dev/nul "http://api.dynu.com/nic/update?hostname=example.dynu.com&username=someusername
+&password=c83f7caa53d9abf804aca0199aa029af"
+
+17.大功告成，试试看。
 ----------------------------------------------------------------------
 配置ocserv自签证书认证
 1. 执行上文1-9步
