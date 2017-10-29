@@ -139,3 +139,19 @@
 	chkconfig ocserv on
 	service ocserv start
 16.大功告成，试试看。
+----------------------------------------------------------------------------------------
+安装lighttpd用于申请let's encrypt证书：
+yum -y install lighttpd
+安装完后的文件夹：server root /var/www，doc root：/var/www/lighttpd
+iptables开放tcp 80端口
+-----------------------------------------------------------------------------------------
+安装letsencrypt证书：
+https://www.dynu.com申请免费动态域名。
+wget https://dl.eff.org/certbot-auto
+chmod a+x certbot-auto
+./certbot-auto certonly --webroot -w /var/www/lighttpd -d www.example.com
+生成的证书在/etc/letsencrypt/live/www.example.com下面, 90天有效
+为/etc/crontab添加条目，每月22日20:00自动执行: /root/certbot-auto renew
+修改/etc/ocserv/ocserv.conf：
+	server-cert = /etc/letsencrypt/live/www.example.com/fullchain.pem
+	server-key = /etc/letsencrypt/live/www.example.com/privkey.pem
