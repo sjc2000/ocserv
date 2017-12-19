@@ -110,7 +110,7 @@
 5. 启动ocserv：
 	service ocserv restart
 	或ocserv -f -d 1 可以查看调试信息
-5. 安装nginx：
+5. 安装nginx：(lighttpd更简单)
 	yum install -y nginx
 6. 复制nginx配置文件
 	cp /etc/nginx/nginx.conf.default /etc/nginx/nginx.conf
@@ -144,6 +144,7 @@
 yum -y install lighttpd
 安装完后的文件夹：server root /var/www，doc root：/var/www/lighttpd
 iptables开放tcp 80端口
+lighttpd不会开机启动，要输入命令：chkconfig lighttpd on
 -----------------------------------------------------------------------------------------
 安装letsencrypt证书：
 https://www.dynu.com申请免费动态域名。
