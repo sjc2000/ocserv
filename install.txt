@@ -152,7 +152,12 @@ wget https://dl.eff.org/certbot-auto
 chmod a+x certbot-auto
 ./certbot-auto certonly --webroot -w /var/www/lighttpd -d www.example.com
 生成的证书在/etc/letsencrypt/live/www.example.com下面, 90天有效
-为/etc/crontab添加条目，每月22日20:00自动执行: /root/certbot-auto renew
 修改/etc/ocserv/ocserv.conf：
 	server-cert = /etc/letsencrypt/live/www.example.com/fullchain.pem
 	server-key = /etc/letsencrypt/live/www.example.com/privkey.pem
+----------------------------------------------------------------------------
+更新let's encrypt证书：
+在过期前30天或过期后执行：sudo ./certbot-auto renew --quiet
+若失败可尝试：sudo ./certbot-auto renew --quiet 或 --force-renew
+/etc/crontab添加条目，GMT时间每月22日晚8点自动执行: 
+	0 20 22 * * root /root/certbot-auto renew --quiet
