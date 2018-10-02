@@ -1,0 +1,123 @@
+Vultr部署ocserv证书认证
+
+1. 申请免费动态域名
+  网址：https://www.dynu.com
+  Linux系统注册域名：
+  wget -O /dev/nul "https://api.dynu.com/nic/update?hostname=any.mydomainname.com&username=johnsmith@mail.com&password=md5frompassword"
+2. 购买centos 6 x64服务器，测试是否ping通
+3. 关闭selinux：
+	setenforce 0 立即生效， 或
+  修改/etc/selinux/config 文件将SELINUX=enforcing改为SELINUX=disabled重启生效
+  用getinforce命令确认已关闭成功
+4. 安装epel源：
+	yum install -y epel-release
+5. 安装apache：
+        yum install -y httpd
+	主页文件夹：/var/www/html
+	禁用https，关闭443端口：
+	vi /etc/httpd/conf.d/ssl.conf注释掉443端口，
+  执行命令：service httpd restart 生效
+	netstat -tunlp 查看进程占用端口
+	iptables开放tcp 80端口
+6. 安装letsencrypt证书：
+	wget https://dl.eff.org/certbot-auto
+	chmod a+x certbot-auto
+	./certbot-auto certonly --webroot -w /var/www/html -d any.mydomainname.com
+	生成的证书在/etc/letsencrypt/live/any.mydomainname.com下面, 90天有效
+	为/etc/crontab添加条目，每月22日20:00自动执行证书更新: /root/certbot-auto renew --quiet
+7. 安装ocserv：
+	yum install -y ocserv
+	此时ocserv.conf配置文件已经在/etc/ocserv文件夹中,“ocserv”用户和组已创建。
+8. 创建证书文件夹：
+	cd && mkdir cert && cd cert
+9. 创建ca证书模板文件 cat << EOF > ca.tmpl：
+cn = "VPN CA" 
+organization = "Big Corp" 
+serial = 1 
+expiration_days = 3650
+ca 
+signing_key 
+cert_signing_key 
+crl_signing_key
+EOF
+10. 生成ca密钥和ca证书：
+	certtool --generate-privkey --outfile ca-key.pem
+	certtool --generate-self-signed --load-privkey ca-key.pem --template ca.tmpl --outfile ca-cert.pem
+	cp ca-cert.pem /etc/ocserv
+11. 创建客户端证书模板：cat << EOF > user1.tmpl
+	cn = "user1" 
+	unit = "admins" 
+	expiration_days = 365 
+	signing_key 
+	tls_www_client
+	EOF
+12. 生成客户端证书：
+	certtool --generate-privkey --outfile user1-key.pem
+	certtool --generate-certificate --load-privkey user1-key.pem --load-ca-certificate ca-cert.pem --load-ca-privkey ca-key.pem --template zhg.tmpl --outfile user1-cert.pem
+	certtool --to-p12 --load-privkey user1-key.pem --pkcs-cipher 3des-pkcs12 --load-certificate user1-cert.pem --outfile user1.p12 --outder --password ""
+	cp user1.p12 /var/www/html
+	证书链接：http://any.mydomainname.com/user1.p12
+13. 修改配置文件ocserv.conf
+	auth = "certificate"
+	其它auth字段注释掉
+	try-mtu-discovery = true
+	注释掉 listen-clear-file = /var/run/ocserv-conn.socket
+	server-cert = /etc/letsencrypt/live/any.mydomainname.com/fullchain.pem
+	server-key = /etc/letsencrypt/live/any.mydomainname.com/privkey.pem
+  ca-cert = /etc/ocserv/ca-cert.pem
+	cert-user-oid = 2.5.4.3
+	ipv4-network = 192.168.13.0/24
+	dns = 8.8.8.8
+	注释掉所有的route字段, 添加 no-route 大陆ip
+	#route = 10.10.10.0/255.255.255.0
+	#route = 192.168.0.0/255.255.0.0
+	#route = fef4:db8:1000:1001::/64
+	#no-route = 192.168.5.0/255.255.255.0
+	cisco-client-compat = true
+14. 启动ocserv：
+	service ocserv restart
+	或ocserv -f -d 1 可以查看调试信息
+15.开启nat：
+	iptables -t nat -A POSTROUTING -j MASQUERADE
+16.开启ip转发：
+	修改文件 /etc/sysctl.conf
+	net.ipv4.ip_forward=1
+	生效：
+	sysctl -p /etc/sysctl.conf
+17.创建防火墙规则：
+	iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
+	iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport 443 -j ACCEPT
+	iptables -I INPUT -m state --state NEW -m udp -p udp --dport 443 -j ACCEPT
+	iptables -I FORWARD -i vpns+ -j ACCEPT
+	iptables -I FORWARD -o vpns+ -j ACCEPT #必须双向转发
+	service iptables save
+18.设置开机启动：
+	chkconfig --add httpd
+	chkconfig --add ocserv
+	chkconfig httpd on
+	chkconfig ocserv on
+	service httpd start
+	service ocserv start
+19.设置开机自动执行：
+更新域名解析：rc.local
+wget -O /dev/nul "https://api.dynu.com/nic/update?hostname=any.mydomainname.com&username=johnsmith@mail.com&password=md5frompassword"
+20.设置定时更新服务端证书，UTC每天20:30重启清内存：
+vi /etc/crontab
+0 20 22 * * root /root/certbot-auto renew --quiet
+30 20 * * * root reboot
+21.安装bbr
+用root用户登录，运行以下命令：
+
+wget --no-check-certificate https://github.com/teddysun/across/raw/master/bbr.sh 
+chmod +x bbr.sh
+bash bbr.sh
+
+安装完成后，脚本会提示需要重启 VPS，输入 y 并回车后重启。
+重启完成后，进入 VPS，
+验证一下是否成功安装最新内核并开启 TCP BBR，
+输入以下命令：
+
+  lsmod | grep bbr
+
+结果显示有tcp_bbr就表示 OK 了
+22.服务端安装完成。
