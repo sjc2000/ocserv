@@ -4,7 +4,7 @@ Vultr部署ocserv证书认证
   网址：https://www.dynu.com
   Linux系统注册域名：
   wget -O /dev/nul "https://api.dynu.com/nic/update?hostname=any.mydomainname.com&username=johnsmith@mail.com&password=md5frompassword"
-2. 购买centos 6 x64服务器，测试是否ping通
+2. 购买centos 6 x64服务器，测试是否ping通，不要买OpenVZ服务器
 3. 关闭selinux：
 	setenforce 0 立即生效， 或
   修改/etc/selinux/config 文件将SELINUX=enforcing改为SELINUX=disabled重启生效
