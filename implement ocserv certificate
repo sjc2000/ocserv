@@ -2,7 +2,7 @@ Vultr部署ocserv证书认证
 
 1. 申请免费动态域名
   网址：https://www.dynu.com
-  Linux系统注册域名：
+  之后在Linux系统注册域名：
   wget -O /dev/nul "https://api.dynu.com/nic/update?hostname=any.mydomainname.com&username=johnsmith@mail.com&password=md5frompassword"
 2. 购买centos 6 x64服务器，测试是否ping通，不要买OpenVZ服务器
 3. 关闭selinux：
@@ -64,7 +64,7 @@ EOF
 	注释掉 listen-clear-file = /var/run/ocserv-conn.socket
 	server-cert = /etc/letsencrypt/live/any.mydomainname.com/fullchain.pem
 	server-key = /etc/letsencrypt/live/any.mydomainname.com/privkey.pem
-  ca-cert = /etc/ocserv/ca-cert.pem
+  	ca-cert = /etc/ocserv/ca-cert.pem
 	cert-user-oid = 2.5.4.3
 	ipv4-network = 192.168.13.0/24
 	dns = 8.8.8.8
@@ -120,4 +120,4 @@ bash bbr.sh
   lsmod | grep bbr
 
 结果显示有tcp_bbr就表示 OK 了
-22.服务端安装完成。
+22.END
