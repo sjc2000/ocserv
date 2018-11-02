@@ -1,14 +1,14 @@
 Vultr部署ocserv证书认证
 
 1. 申请免费动态域名
-  网址：https://www.dynu.com
-  之后在Linux系统注册域名：
-  wget -O /dev/nul "https://api.dynu.com/nic/update?hostname=any.mydomainname.com&username=johnsmith@mail.com&password=md5frompassword"
-2. 购买centos 6 x64服务器，测试是否ping通，不要买OpenVZ服务器
+   网址：https://www.dynu.com
+2. 购买centos 6 x64服务器，测试是否ping通，买KVM不要买OpenVZ服务器
+   在Linux系统注册域名：
+   wget -O /dev/nul "https://api.dynu.com/nic/update?hostname=any.mydomainname.com&username=johnsmith@mail.com&password=md5frompassword"
 3. 关闭selinux：
 	setenforce 0 立即生效， 或
-  修改/etc/selinux/config 文件将SELINUX=enforcing改为SELINUX=disabled重启生效
-  用getinforce命令确认已关闭成功
+   修改/etc/selinux/config 文件将SELINUX=enforcing改为SELINUX=disabled重启生效
+   用getinforce命令确认已关闭成功
 4. 安装epel源：
 	yum install -y epel-release
 5. 安装apache：
