@@ -1,0 +1,27 @@
+用户证书吊销
+
+创建空吊销列表文件
+
+cd /etc/ocserv/ssl/crl
+touch revoked.pem
+创建吊销证书模板
+
+cat << EOF > crl.tmpl
+crl_next_update = 9999
+crl_number = 1
+EOF
+
+创建空的吊销列表，当revoked.pem为空时，执行如下命令生成吊销证书链文件crl.pem。
+
+certtool --generate-crl --load-ca-privkey ../private/ca-key.pem \
+--load-ca-certificate ../ca/ca-cert.pem --template crl.tmpl --outfile crl.pem
+
+吊销一个用户，假设要吊销用户证书为user1，首先将其用户证书追加到revoked.pem，然后生成新的吊销证书链文件crl.pem
+
+cd /etc/ocserv/ssl/crl
+cat ../user/user1/user1-cert.pem >> revoked.pem
+certtool --generate-crl --load-ca-privkey ../private/ca-key.pem \
+--load-ca-certificate ../ca/ca-cert.pem --load-certificate revoked.pem \
+--template crl.tmpl --outfile crl.pem
+若想重新启用一个被吊销的用户，则需要删除revoked.pem其中对应用户证书的密钥，然后重新生成吊销证书链文件crl.pem，
+若revoke.pem被清空，则生成的时候不添加--load-certificate参数
