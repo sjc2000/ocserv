@@ -57,7 +57,11 @@ EOF
 	certtool --to-p12 --load-privkey user1-key.pem --pkcs-cipher 3des-pkcs12 --load-certificate user1-cert.pem --outfile user1.p12 --outder --password ""
 	cp user1.p12 /var/www/html
 	证书链接：http://any.mydomainname.com/user1.p12
-13. 修改配置文件ocserv.conf
+13. 生成空的作废清单：
+	certtool --generate-crl --load-ca-privkey ca-key.pem \
+           --load-ca-certificate ca-cert.pem \
+           --template crl.tmpl --outfile crl.pem
+14. 修改配置文件ocserv.conf
 	auth = "certificate"
 	其它auth字段注释掉
 	try-mtu-discovery = true
@@ -66,6 +70,7 @@ EOF
 	server-key = /etc/letsencrypt/live/any.mydomainname.com/privkey.pem
   	ca-cert = /etc/ocserv/ca-cert.pem
 	cert-user-oid = 2.5.4.3
+	crl = /etc/ocserv/crl.pem
 	ipv4-network = 192.168.13.0/24
 	dns = 8.8.8.8
 	注释掉所有的route字段, 添加 no-route 大陆ip
@@ -74,38 +79,38 @@ EOF
 	#route = fef4:db8:1000:1001::/64
 	#no-route = 192.168.5.0/255.255.255.0
 	cisco-client-compat = true
-14. 启动ocserv：
+15. 启动ocserv：
 	service ocserv restart
 	或ocserv -f -d 1 可以查看调试信息
-15.开启nat：
+16.开启nat：
 	iptables -t nat -A POSTROUTING -j MASQUERADE
-16.开启ip转发：
+17.开启ip转发：
 	修改文件 /etc/sysctl.conf
 	net.ipv4.ip_forward=1
 	生效：
 	sysctl -p /etc/sysctl.conf
-17.创建防火墙规则：
+18.创建防火墙规则：
 	iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
 	iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport 443 -j ACCEPT
 	iptables -I INPUT -m state --state NEW -m udp -p udp --dport 443 -j ACCEPT
 	iptables -I FORWARD -i vpns+ -j ACCEPT
 	iptables -I FORWARD -o vpns+ -j ACCEPT #必须双向转发
 	service iptables save
-18.设置开机启动：
+19.设置开机启动：
 	chkconfig --add httpd
 	chkconfig --add ocserv
 	chkconfig httpd on
 	chkconfig ocserv on
 	service httpd start
 	service ocserv start
-19.设置开机自动执行：
+20.设置开机自动执行：
 更新域名解析：rc.local
 wget -O /dev/nul "https://api.dynu.com/nic/update?hostname=any.mydomainname.com&username=johnsmith@mail.com&password=md5frompassword"
-20.设置定时更新服务端证书，UTC每天20:30重启清内存：
+21.设置定时更新服务端证书，UTC每天20:30重启清内存：
 vi /etc/crontab
 0 20 22 * * root /root/certbot-auto renew --quiet
 30 20 * * * root reboot
-21.安装bbr
+22.安装bbr
 用root用户登录，运行以下命令：
 
 wget --no-check-certificate https://github.com/teddysun/across/raw/master/bbr.sh 
@@ -120,4 +125,4 @@ bash bbr.sh
   lsmod | grep bbr
 
 结果显示有tcp_bbr就表示 OK 了
-22.END
+23.END
