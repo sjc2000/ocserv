@@ -58,6 +58,10 @@ EOF
 	cp user1.p12 /var/www/html
 	证书链接：http://any.mydomainname.com/user1.p12
 13. 生成空的用户证书吊销清单：
+	cat << _EOF_ >crl.tmpl
+	crl_next_update = 365
+	crl_number = 1
+	_EOF_
 	certtool --generate-crl --load-ca-privkey ca-key.pem \
            --load-ca-certificate ca-cert.pem \
            --template crl.tmpl --outfile crl.pem
