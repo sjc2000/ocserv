@@ -1,9 +1,9 @@
 #ocpasswd -c /etc/ocpasswd username
-moubin mb1234
-xiao xwb123
-puji pj1234
-zhang zh123
-zeng zh1234
-potato107 4216565wang mouyou
-liuyu liu123 mouyou
-jiang jsj1234 xiaoyou
+moubin
+xiao 
+puji 
+zhang 
+zeng 
+potato107  mouyou
+liuyu  mouyou
+jiang  xiaoyou
