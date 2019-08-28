@@ -129,4 +129,9 @@ bash bbr.sh
   lsmod | grep bbr
 
 结果显示有tcp_bbr就表示 OK 了
+
+安装bbr出现问题，ssl connect error
+根据网上说法执行yum update，报错epel源不能连接
+解决方法：编辑/etc/yum.repos.d/epel.repo，将epel配置信息中的baseurl注释去掉，mirrorlist加上注释
+yum update后，再次运行bash bbr.sh通过
 23.END
