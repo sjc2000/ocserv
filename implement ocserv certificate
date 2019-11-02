@@ -8,7 +8,7 @@ Vultr部署ocserv证书认证
 3. 关闭selinux：
 	setenforce 0 立即生效， 或
    修改/etc/selinux/config 文件将SELINUX=enforcing改为SELINUX=disabled重启生效
-   用getinforce命令确认已关闭成功
+   用getenforce命令确认已关闭成功
 4. 安装epel源：
 	yum install -y epel-release
 5. 安装apache：
