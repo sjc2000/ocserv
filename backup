@@ -1,5 +1,6 @@
 tar命令备份文件夹：
-1. /etc/ocserv, 确保ca-cert.pem, crl.pem在里面
-2. /etc/letsencrypt
-3. /root home文件夹, 里面有用户证书
-4. /var/www/html
+  1. /etc/ocserv      #确保ca-cert.pem, crl.pem在里面
+  2. /etc/letsencrypt
+  3. /etc/httpd
+  4. /root            #home文件夹, 里面有用户证书
+  5. /var/www/html
